@@ -2,7 +2,7 @@ import "./globals.css";
 import Link from "next/link";
 
 export const metadata = {
-  title: "AgentDock",
+  title: "AgentDesk",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

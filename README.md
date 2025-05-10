@@ -1,4 +1,4 @@
-# AgentDock
+# AgentDesk
 
 A multi-agent MCP server with a web UI for registering, managing, and interacting with intelligent agents.
 
@@ -12,8 +12,8 @@ A multi-agent MCP server with a web UI for registering, managing, and interactin
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/<your-org>/agentdock.git
-   cd agentdock
+   git clone https://github.com/<your-org>/agentdesk.git
+   cd agentdesk
    ```
 
 2. **Build & run with Docker Compose**
