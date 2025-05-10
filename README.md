@@ -19,7 +19,7 @@ A multi-agent MCP server with a web UI for registering, managing, and interactin
 2. **Build & run with Docker Compose**
 
    ```bash
-   docker-compose up --build
+   docker compose up --build
    ```
 
    * Frontend UI will be available at [http://localhost:3000](http://localhost:3000)
@@ -28,7 +28,7 @@ A multi-agent MCP server with a web UI for registering, managing, and interactin
 3. **Stopping the services**
 
    ```bash
-   docker-compose down
+   docker compose down
    ```
 
 ## Next Steps
