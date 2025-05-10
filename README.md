@@ -1,4 +1,4 @@
-# AgentDock
+# AgentDesk
 
 A multi-agent MCP server with a web UI for registering, managing, and interacting with intelligent agents.
 
@@ -12,8 +12,8 @@ A multi-agent MCP server with a web UI for registering, managing, and interactin
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/<your-org>/agentdock.git
-   cd agentdock
+   git clone https://github.com/<your-org>/agentdesk.git
+   cd agentdesk
    ```
 
 2. **Build & run with Docker Compose**
@@ -38,9 +38,14 @@ A multi-agent MCP server with a web UI for registering, managing, and interactin
   ```text
   GROQ_API_KEY=your_free_tier_key
   ```
+
+* Configure your Groq Cloud credentials in a `.env.local` file in `frontend/`:
+  ```text
+NEXT_PUBLIC_API_URL=http://localhost:4000
+  ```
+
 * Register new agents via the `/agents` REST endpoints.
-* Interact with agents in the `/chat` UI.
 
 ---
 
-*Happy hacking!*
+
