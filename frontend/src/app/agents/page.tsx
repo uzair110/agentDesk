@@ -1,16 +1,18 @@
-// app/agents/page.tsx
 "use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getAgents, createAgent } from "../lib/api";
+import { getAgents, createAgent, ToolMetadata, deleteAgent } from "../lib/api";
 import { PlusIcon } from "@heroicons/react/24/outline";
+import Modal from "../components/modal";
 
 interface Agent {
   id: string;
   name: string;
   description?: string;
-  config: object;
+  config: {
+    tools: ToolMetadata[];
+  };
 }
 
 export default function AgentsPage() {
@@ -20,6 +22,8 @@ export default function AgentsPage() {
   const [desc, setDesc] = useState("");
   const [config, setConfig] = useState("{}");
   const [loading, setLoading] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [agentToDelete, setAgentToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAgents();
@@ -55,9 +59,15 @@ export default function AgentsPage() {
     }
   }
 
+  async function deleteAgentHelper(id: string) {
+    await deleteAgent(id);
+    setAgents((prev) => prev.filter((a) => a.id !== id));
+    setDeleteModalOpen(false);
+    setAgentToDelete(null);
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Agents</h1>
         <button
@@ -117,12 +127,18 @@ export default function AgentsPage() {
           <div
             key={a.id}
             className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-shadow"
-          >
+          > 
             <h2 className="text-xl font-semibold mb-2">{a.name}</h2>
             {a.description && (
               <p className="text-gray-600 mb-4">{a.description}</p>
             )}
-            <p className="text-xs text-gray-400 mb-6 truncate">{a.id}</p>
+            {a.config.tools && (
+              <p className="text-xs text-gray-400 mb-6 truncate">
+                {Array.isArray(a.config.tools) && a.config.tools.length > 0 
+                  ? `Tools: ${a.config.tools.map((t: ToolMetadata) => t.key).join(", ")}`
+                  : "No tools"}
+              </p>
+            )}
             <div className="flex space-x-2">
               <Link
                 href={`/chat/${a.id}`}
@@ -136,10 +152,46 @@ export default function AgentsPage() {
               >
                 Tools
               </Link>
+              <button
+                onClick={() => {
+                  setDeleteModalOpen(true);
+                  setAgentToDelete(a.id);
+                }}
+                className="flex-1 text-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+              >
+                Delete
+              </button>
             </div>
           </div>
         ))}
       </div>
+
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setAgentToDelete(null);
+        }}
+        title="Confirm Delete"
+        actions={[
+          {
+            label: "Cancel",
+            onClick: () => {
+              setDeleteModalOpen(false);
+              setAgentToDelete(null);
+            },
+            variant: "secondary"
+          },
+          {
+            label: "Delete",
+            onClick: () => agentToDelete && deleteAgentHelper(agentToDelete)
+          }
+        ]}
+      >
+        <p className="text-gray-600">
+          Are you sure you want to delete this agent? This action cannot be undone.
+        </p>
+      </Modal>
     </div>
   );
 }
