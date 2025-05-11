@@ -16,6 +16,13 @@ export async function createAgent(data: { name: string; description?: string; co
   return res.json();
 }
 
+export async function deleteAgent(id: string) {
+  const res = await fetch(`${BASE}/agents/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete agent");
+}
+
 export async function chatAgent(
   agentId: string,
   message: string,
