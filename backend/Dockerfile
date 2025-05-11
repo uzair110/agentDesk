@@ -5,11 +5,17 @@ RUN corepack enable && corepack prepare yarn@stable --activate
 
 WORKDIR /app
 
+# Copy package files
 COPY package.json yarn.lock ./
-RUN yarn install --immutable
 
+# Install dependencies
+RUN yarn install --frozen-lockfile
+
+# Copy the rest of the application
 COPY . .
-RUN yarn build
+
+# Build the application
+RUN yarn install && yarn build
 
 EXPOSE 4000
 CMD ["node", "dist/index.js"]
