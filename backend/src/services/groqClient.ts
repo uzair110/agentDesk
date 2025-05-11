@@ -17,13 +17,14 @@ export async function chatCompletion(
   model: string,
   messages: ChatMessage[]
 ): Promise<string> {
+  const groqKey = process.env.NEXT_PUBLIC_GROQ_API_KEY || apiKey;
   const res = await axios.post(
     'https://api.groq.com/openai/v1/chat/completions', 
     { model, messages }, 
     {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${groqKey}`,
       },
     }
   );

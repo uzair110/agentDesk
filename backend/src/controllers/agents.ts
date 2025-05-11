@@ -8,9 +8,17 @@ export function createAgent(req: Request, res: Response) {
     res.status(400).json({ error: 'name and config required' });
     return;
   }
-  const agent: Agent = { id: uuid(), name, description, config };
-  agents.push(agent);
-  res.status(201).json(agent);
+  const newAgent: Agent = {
+    id: uuid(),
+    name,
+    description,
+    config: {
+      tools: config.tools ?? []
+    }
+  };
+
+  agents.push(newAgent);
+  res.status(201).json(newAgent);
 }
 
 export function listAgents(_req: Request, res: Response) {

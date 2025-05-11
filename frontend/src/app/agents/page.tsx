@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getAgents, createAgent } from "../lib/api";
+import { PlusIcon } from "@heroicons/react/24/outline";
 
 interface Agent {
   id: string;
@@ -42,11 +43,11 @@ export default function AgentsPage() {
         description: desc,
         config: JSON.parse(config),
       });
-      setAgents((prev) => [...prev, newAgent]);
+      setAgents((prev) => [newAgent, ...prev]);
+      setShowForm(false);
       setName("");
       setDesc("");
       setConfig("{}");
-      setShowForm(false);
     } catch (err) {
       console.error(err);
     } finally {
@@ -55,79 +56,90 @@ export default function AgentsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
-      {/* Header with Add Agent button */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Agents</h1>
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Agents</h1>
         <button
           onClick={() => setShowForm((f) => !f)}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow"
         >
+          <PlusIcon className="h-5 w-5 mr-2" />
           {showForm ? "Cancel" : "Add Agent"}
         </button>
       </div>
 
-      {/* Conditionally shown form */}
+      {/* Create Agent Form */}
       {showForm && (
         <form
           onSubmit={onSubmit}
-          className="p-6 bg-white rounded shadow space-y-4"
+          className="bg-white p-6 rounded-lg shadow-md mb-8 space-y-4"
         >
-          <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border p-2 rounded"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Description"
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-            className="w-full border p-2 rounded"
-          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input
+              type="text"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="col-span-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              className="col-span-2 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
           <textarea
             placeholder='Config (JSON), e.g. {"foo":"bar"}'
             value={config}
             onChange={(e) => setConfig(e.target.value)}
-            className="w-full border p-2 rounded font-mono text-sm"
+            className="w-full border rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={4}
           />
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            {loading ? "Creating…" : "Create Agent"}
-          </button>
+          <div className="text-right">
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow"
+            >
+              {loading ? "Creating…" : "Create Agent"}
+            </button>
+          </div>
         </form>
       )}
 
-      {/* Agent list with Chat button */}
-      <ul className="space-y-4">
+      {/* Agents Grid */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {agents.map((a) => (
-          <li
+          <div
             key={a.id}
-            className="p-4 bg-white rounded shadow flex justify-between items-center"
+            className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-shadow"
           >
-            <div>
-              <p className="font-semibold">{a.name}</p>
-              <p className="text-sm text-gray-600">{a.description}</p>
-              <p className="text-sm text-gray-600">{JSON.stringify(a.id)}</p>
-            </div>
-            <div className="flex items-center space-x-2">
+            <h2 className="text-xl font-semibold mb-2">{a.name}</h2>
+            {a.description && (
+              <p className="text-gray-600 mb-4">{a.description}</p>
+            )}
+            <p className="text-xs text-gray-400 mb-6 truncate">{a.id}</p>
+            <div className="flex space-x-2">
               <Link
                 href={`/chat/${a.id}`}
-                className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                className="flex-1 text-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
               >
                 Chat
               </Link>
+              <Link
+                href={`/agents/${a.id}`}
+                className="flex-1 text-center px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg"
+              >
+                Tools
+              </Link>
             </div>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
