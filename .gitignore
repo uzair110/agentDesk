@@ -66,6 +66,11 @@ yarn-debug.log*
 yarn-error.log*
 
 # ====================
+# Prisma
+# ====================
+/backend/prisma/*
+
+# ====================
 # OS & Editor
 # ====================
 .DS_Store

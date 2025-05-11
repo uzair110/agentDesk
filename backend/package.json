@@ -7,11 +7,13 @@
   },
   "packageManager": "yarn@3.2.3",
   "dependencies": {
+    "@prisma/client": "^6.7.0",
     "axios": "^1.9.0",
     "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "prisma": "^6.7.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

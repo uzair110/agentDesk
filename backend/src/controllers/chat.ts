@@ -1,14 +1,18 @@
-import type { RequestHandler } from 'express';
+// backend/src/controllers/chat.ts
+import type { RequestHandler } from "express";
 import { chatCompletion } from "../services/groqClient";
-import { invokeTool, ToolEntry }       from "../services/tools";
-import { availableTools }              from "../services/availableTools";
-import { agents }                      from "../models/agent";
+import { invokeTool } from "../services/tools";
+import { availableTools } from "../services/availableTools";
+import db from "../services/db";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+const GROQ_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY!;
+const GROQ_MODEL   = process.env.NEXT_PUBLIC_GROQ_MODEL!;
+
 export const chatAgent: RequestHandler = async (req, res) => {
-  const agent = agents.find(a => a.id === req.params.id);
+  const agent = await db.agent.findUnique({ where: { id: req.params.id } });
   if (!agent) {
     res.status(404).json({ error: "Agent not found" });
     return;
@@ -20,76 +24,90 @@ export const chatAgent: RequestHandler = async (req, res) => {
     return;
   }
 
-  const toolInfo = agent.config.tools
-    .map((t) => {
-      const m = availableTools.find((av) => av.key === t.key)!;
+  await db.chatLog.create({
+    data: {
+      agentId: agent.id,
+      role:    "user",
+      message: message,
+    },
+  });
+
+  const toolInfo = (agent.config as { tools?: any[] }).tools
+    ?.map(t => {
+      const m = availableTools.find(av => av.key === t.key)!;
       return `• ${m.key}: ${m.name} — ${m.description}`;
     })
-    .join("\n");
+    .join("\n") || "";
 
   const systemPrompt = `
-You are ${agent.name}.
-You have these external tools available:
+You are a versatile assistant that can invoke external tools as needed.
+Available tools:
 ${toolInfo}
 
-To use a tool, reply with exactly:
+To use a tool, respond with exactly one JSON object:
 {"toolKey":"<toolKey>","toolArgs":{…}}
-Otherwise just reply directly.
-`;
+If you don't need a tool, reply with plain text only.
+Keep your response concise, to the point and in a conversational tone.
+When you respond, do not mention your own name; just answer the user.
+`.trim();
 
   let raw: string;
   try {
     raw = await chatCompletion(
-      process.env.NEXT_PUBLIC_GROQ_API_KEY!,    
-      process.env.NEXT_PUBLIC_GROQ_MODEL!,      
+      GROQ_API_KEY,
+      GROQ_MODEL,
       [
         { role: "system", content: systemPrompt },
         { role: "user",   content: message }
       ]
     );
-  } catch (err) {
-    console.error(err);
+  } catch {
     res.status(502).json({ error: "LLM call failed" });
     return;
   }
 
-  let choice: { toolKey: string; toolArgs: any }|null = null;
+  let finalReply = raw;
+  let choice: { toolKey: string; toolArgs: any } | null = null;
+
   try {
     choice = JSON.parse(raw);
   } catch {
-    res.json({ reply: raw });
-    return;
+    // finalReply already set to raw
   }
 
-  const entry = agent.config.tools.find((t) => t.key === choice!.toolKey) as ToolEntry;
-  if (!entry) {
-    res.status(400).json({ error: `Unknown tool: ${choice!.toolKey}` });
-    return;
+  if (choice) {
+    const entry = (agent.config as { tools?: any[] }).tools!.find(t => t.key === choice!.toolKey)!;
+    try {
+      finalReply = await invokeTool(entry, choice.toolArgs);
+    } catch (err: any) {
+      res.status(500).json({ error: `${entry.key} failed: ${err.message}` });
+      return;
+    }
   }
 
-  let result: string;
   try {
-    result = await invokeTool(entry, choice!.toolArgs);
-  } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ error: `${entry.key} failed: ${err.message}` });
-    return;
-  }
-
-  // 5. Optionally wrap up via Groq again
-  let finalReply = result;
-  try {
-    finalReply = await chatCompletion(
-      process.env.NEXT_PUBLIC_GROQ_API_KEY!,
-      process.env.NEXT_PUBLIC_GROQ_MODEL!,
+    const wrap = await chatCompletion(
+      GROQ_API_KEY,
+      GROQ_MODEL,
       [
-        { role: "system", content: `You are ${agent.name}. Summarize this: ${result}` },
+        { role: "system", content: "Please produce a concise summary of the following output:" },
+        { role: "user",   content: finalReply }
       ]
     );
-  } catch (error) {
-    console.log("error in finalReply", error);
-    // ignore, return raw
+    if (wrap.trim()) {
+      finalReply = wrap.trim();
+    }
+  } catch {
+    /* ignore */
   }
+
+  await db.chatLog.create({
+    data: {
+      agentId: agent.id,
+      role:    "agent",
+      message: finalReply,
+    },
+  });
 
   res.json({ reply: finalReply });
 };
