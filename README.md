@@ -15,8 +15,20 @@ A multi-agent MCP server with a web UI for registering, managing, and interactin
    git clone https://github.com/uzair110/agentdesk.git
    cd agentdesk
    ```
+   
+2. * Configure your Groq Cloud credentials in a `.env.local` file in `frontend/`:
+  ```text
+   NEXT_PUBLIC_API_URL=http://localhost:4000
+  ```
 
-2. **Build & run with Docker Compose**
+3. * Configure your credentials in a `.env` file in `backend/`:
+  ```text
+   NEXT_PUBLIC_GROQ_API_KEY= <YOUR_API_KEY>
+   NEXT_PUBLIC_GROQ_MODEL=llama-3.3-70b-versatile
+   NEXT_PUBLIC_GITHUB_TOKEN=<GITHUB_TOKEN>
+  ```
+
+4. **Build & run with Docker Compose**
 
    ```bash
    docker compose up --build
@@ -30,20 +42,6 @@ A multi-agent MCP server with a web UI for registering, managing, and interactin
    ```bash
    docker compose down
    ```
-
-## Next Steps
-
-* Configure your Groq Cloud credentials in a `.env.local` file in `frontend/`:
-  ```text
-   NEXT_PUBLIC_API_URL=http://localhost:4000
-  ```
-
-* Configure your credentials in a `.env` file in `backend/`:
-  ```text
-   NEXT_PUBLIC_GROQ_API_KEY= <YOUR_API_KEY>
-   NEXT_PUBLIC_GROQ_MODEL=llama-3.3-70b-versatile
-   NEXT_PUBLIC_GITHUB_TOKEN=<GITHUB_TOKEN>
-  ```
 
 * Register new agents via the `/agents` REST endpoints.
 
