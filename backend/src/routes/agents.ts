@@ -9,6 +9,7 @@ import {
 import { chatAgent }    from "../controllers/chat";
 import { listTools, addTool, removeTool } from "../controllers/agentTools";
 import { listAvailableTools } from "../controllers/tools";
+import { getHistory } from "../controllers/logs";
 
 const router = Router();
 
@@ -25,5 +26,9 @@ router.get("/tools",listAvailableTools);
 router.get("/:id/tools",listTools);          
 router.post("/:id/tools",addTool);
 router.delete("/:id/tools/:toolKey",removeTool);
+
+// Logs APIs
+router.get("/:id/logs",getHistory);
+
 
 export default router;

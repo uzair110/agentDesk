@@ -1,14 +1,18 @@
-import type { RequestHandler } from 'express';
+// backend/src/controllers/chat.ts
+import type { RequestHandler } from "express";
 import { chatCompletion } from "../services/groqClient";
-import { invokeTool, ToolEntry }       from "../services/tools";
-import { availableTools }              from "../services/availableTools";
-import { agents }                      from "../models/agent";
+import { invokeTool } from "../services/tools";
+import { availableTools } from "../services/availableTools";
+import db from "../services/db";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+const GROQ_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY!;
+const GROQ_MODEL   = process.env.NEXT_PUBLIC_GROQ_MODEL!;
+
 export const chatAgent: RequestHandler = async (req, res) => {
-  const agent = agents.find(a => a.id === req.params.id);
+  const agent = await db.agent.findUnique({ where: { id: req.params.id } });
   if (!agent) {
     res.status(404).json({ error: "Agent not found" });
     return;
@@ -20,76 +24,102 @@ export const chatAgent: RequestHandler = async (req, res) => {
     return;
   }
 
-  const toolInfo = agent.config.tools
-    .map((t) => {
-      const m = availableTools.find((av) => av.key === t.key)!;
+  await db.chatLog.create({
+    data: {
+      agentId: agent.id,
+      role:    "user",
+      message,
+    },
+  });
+
+  const toolInfo = (agent.config as { tools?: any[] }).tools
+    ?.map(t => {
+      const m = availableTools.find(av => av.key === t.key)!;
       return `• ${m.key}: ${m.name} — ${m.description}`;
     })
-    .join("\n");
+    .join("\n") || "";
 
-  const systemPrompt = `
-You are ${agent.name}.
-You have these external tools available:
-${toolInfo}
+  const systemPrompt = [`
+You are a versatile assistant.
+Available tools:
+${toolInfo || "(none)"}
 
-To use a tool, reply with exactly:
+If the user asks you to use a tool, reply with exactly one JSON object:
 {"toolKey":"<toolKey>","toolArgs":{…}}
-Otherwise just reply directly.
-`;
+
+If the user asks to summarize a pull request, you **must** respond with exactly one JSON object containing:
+ - "toolKey": "githubSummarizer"
+ - "toolArgs": { "prNumber": <string or number> }
+
+Example:
+  {"toolKey":"githubSummarizer","toolArgs":{"prNumber":"latest"}}
+  {"toolKey":"githubSummarizer","toolArgs":{"prNumber":42}}
+
+If you don't have the tool configured, reply in plain text.
+If no tool is needed, reply in plain text only.
+`].join('');
 
   let raw: string;
   try {
     raw = await chatCompletion(
-      process.env.NEXT_PUBLIC_GROQ_API_KEY!,    
-      process.env.NEXT_PUBLIC_GROQ_MODEL!,      
+      GROQ_API_KEY,
+      GROQ_MODEL,
       [
         { role: "system", content: systemPrompt },
         { role: "user",   content: message }
       ]
     );
-  } catch (err) {
-    console.error(err);
+  } catch {
     res.status(502).json({ error: "LLM call failed" });
     return;
   }
 
-  let choice: { toolKey: string; toolArgs: any }|null = null;
+  let finalReply = raw;
+  let choice: { toolKey: string; toolArgs: any } | null = null;
+
   try {
     choice = JSON.parse(raw);
   } catch {
-    res.json({ reply: raw });
-    return;
+    // Not a tool call, raw is the chat reply
   }
 
-  const entry = agent.config.tools.find((t) => t.key === choice!.toolKey) as ToolEntry;
-  if (!entry) {
-    res.status(400).json({ error: `Unknown tool: ${choice!.toolKey}` });
-    return;
+  if (choice) {
+    const entry = (agent.config as { tools?: any[] }).tools!
+      .find(t => t.key === choice!.toolKey);
+    if (!entry) {
+      finalReply = `Sorry, I don't have the "${choice!.toolKey}" tool configured.`;
+    } else {
+      let toolResult: string;
+      try {
+        toolResult = await invokeTool(entry, choice!.toolArgs);
+      } catch (err: any) {
+        finalReply = `Error invoking tool "${entry.key}": ${err.message}`;
+        toolResult = finalReply;
+      }
+
+      try {
+        const wrap = await chatCompletion(
+          GROQ_API_KEY,
+          GROQ_MODEL,
+          [
+            { role: "system", content: "Please summarize the following result concisely:" },
+            { role: "user",   content: toolResult }
+          ]
+        );
+        finalReply = wrap.trim() || toolResult;
+      } catch {
+        finalReply = toolResult;
+      }
+    }
   }
 
-  let result: string;
-  try {
-    result = await invokeTool(entry, choice!.toolArgs);
-  } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ error: `${entry.key} failed: ${err.message}` });
-    return;
-  }
-
-  // 5. Optionally wrap up via Groq again
-  let finalReply = result;
-  try {
-    finalReply = await chatCompletion(
-      process.env.NEXT_PUBLIC_GROQ_API_KEY!,
-      process.env.NEXT_PUBLIC_GROQ_MODEL!,
-      [
-        { role: "system", content: `You are ${agent.name}. Summarize this: ${result}` },
-      ]
-    );
-  } catch (error) {
-    console.log("error in finalReply", error);
-    // ignore, return raw
-  }
+  await db.chatLog.create({
+    data: {
+      agentId: agent.id,
+      role:    "agent",
+      message: finalReply,
+    },
+  });
 
   res.json({ reply: finalReply });
 };

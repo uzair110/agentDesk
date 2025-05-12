@@ -219,7 +219,7 @@ export default function AgentsPage() {
           }
         ]}
       >
-        <p className="text-gray-300">
+        <p className="text-black">
           Are you sure you want to delete this agent? This action cannot be undone.
         </p>
       </Modal>
