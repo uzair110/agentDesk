@@ -12,7 +12,7 @@ A multi-agent MCP server with a web UI for registering, managing, and interactin
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/<your-org>/agentdesk.git
+   git clone https://github.com/uzair110/agentdesk.git
    cd agentdesk
    ```
 
@@ -32,12 +32,6 @@ A multi-agent MCP server with a web UI for registering, managing, and interactin
    ```
 
 ## Next Steps
-
-* Configure your Groq Cloud credentials in a `.env` file in `backend/`:
-
-  ```text
-  GROQ_API_KEY=your_free_tier_key
-  ```
 
 * Configure your Groq Cloud credentials in a `.env.local` file in `frontend/`:
   ```text
