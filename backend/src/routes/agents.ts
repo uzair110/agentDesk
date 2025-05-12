@@ -31,7 +31,5 @@ router.delete("/:id/tools/:toolKey",removeTool);
 // Logs APIs
 router.get("/:id/logs",getHistory);
 router.get("/:id/metalogs",getLogs);
-router.get("/metalogs/all",getAllLogs);
-
 
 export default router;
