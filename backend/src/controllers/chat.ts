@@ -32,6 +32,16 @@ export const chatAgent: RequestHandler = async (req, res) => {
     },
   });
 
+  
+  let log = await db.log.create({
+    data: {
+      agentId: agent.id,
+      query: message,
+      response: "",
+      metaData: {}
+    },
+  });
+
   const toolInfo = (agent.config as { tools?: any[] }).tools
     ?.map(t => {
       const m = availableTools.find(av => av.key === t.key)!;
@@ -80,7 +90,15 @@ If no tool is needed, reply in plain text only.
     res.status(502).json({ error: "LLM call failed" });
     return;
   }
-
+  log = await db.log.update({
+    where: { id: log.id },
+    data: {
+      metaData: {
+        ...((log.metaData as Record<string, any>) ?? {}),
+        raw,
+      },
+    },
+  });
   let finalReply = raw;
   let choice: { toolKey: string; toolArgs: any } | null = null;
 
@@ -98,7 +116,7 @@ If no tool is needed, reply in plain text only.
     } else {
       let toolResult: string;
       try {
-        toolResult = await invokeTool(entry, choice!.toolArgs);
+        toolResult = await invokeTool(entry, choice!.toolArgs, log);
       } catch (err: any) {
         finalReply = `Error invoking tool "${entry.key}": ${err.message}`;
         toolResult = finalReply;
@@ -125,6 +143,13 @@ If no tool is needed, reply in plain text only.
       agentId: agent.id,
       role:    "agent",
       message: finalReply,
+    },
+  });
+
+  await db.log.update({
+    where: { id: log.id },
+    data: {
+      response: finalReply
     },
   });
 

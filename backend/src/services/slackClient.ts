@@ -1,4 +1,5 @@
 import axios from "axios"
+import db from "../services/db";
 
 interface SlackResponse {
   status: 'success' | 'error'
@@ -8,7 +9,8 @@ interface SlackResponse {
 
 export async function postToSlack(
   webhookUrl: string,
-  text: string
+  text: string,
+  log: Record<string, any>
 ): Promise<string> {
   try {
     const payload = { text }
@@ -27,7 +29,15 @@ export async function postToSlack(
           text: payload.text,
           message: `Slack webhook failed: ${res.status} ${res.statusText}`
         }
-
+    log = await db.log.update({
+      where: { id: log.id },
+      data: {
+        metaData: {
+          ...(log.metaData ?? {}),
+          response
+        },
+      },
+    });
     return JSON.stringify(response)
   } catch (err: any) {
     console.error('Error sending Slack notification:', err.message)

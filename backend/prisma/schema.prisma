@@ -12,7 +12,8 @@ model Agent {
   name        String
   description String?
   config      Json     @default("{}")
-  logs        ChatLog[]
+  chatLogs    ChatLog[]
+  logs        Log[]
 }
 
 model ChatLog {
@@ -20,6 +21,18 @@ model ChatLog {
   agentId  String
   role     String
   message  String
+  ts       DateTime @default(now())
+
+  agent    Agent    @relation(fields: [agentId], references: [id])
+}
+
+
+model Log {
+  id       Int      @id @default(autoincrement())
+  agentId  String
+  metaData Json     @default("{}")
+  query    String
+  response String
   ts       DateTime @default(now())
 
   agent    Agent    @relation(fields: [agentId], references: [id])

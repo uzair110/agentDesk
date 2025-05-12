@@ -1,5 +1,6 @@
 import { chatCompletion, ChatMessage } from "./groqClient";
 import dotenv from "dotenv";
+import db from "../services/db";
 
 dotenv.config();
 
@@ -26,7 +27,8 @@ const getLatestPrNumber = async (cfg: SummarizerConfig): Promise<number> => {
 
 export async function summarizePr(
   cfg: SummarizerConfig,
-  prNumber: number | string
+  prNumber: number | string,
+  log: Record<string, any>,
 ): Promise<string> {
 
   if (prNumber === "latest") {
@@ -36,7 +38,18 @@ export async function summarizePr(
   if (prNumber === -1) {
     return `No pull requests found in ${cfg.owner}/${cfg.repo}`;
   }
+  const updatedMeta = {
+    ...log.metaData,
+    args: {
+      ...(log.metaData?.args || {}),
+      prNumber: prNumber
+    }
+  };
 
+  log = await db.log.update({
+    where: { id: log.id },
+    data: { metaData: updatedMeta }
+  });
   const prRes = await fetch(
     `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/pulls/${prNumber}`,
     {
