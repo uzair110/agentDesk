@@ -41,7 +41,11 @@ A multi-agent MCP server with a web UI for registering, managing, and interactin
 
 * Configure your Groq Cloud credentials in a `.env.local` file in `frontend/`:
   ```text
-NEXT_PUBLIC_API_URL=http://localhost:4000
+   NEXT_PUBLIC_API_URL=http://localhost:4000
+   NEXT_PUBLIC_GROQ_API_KEY= <YOUR_API_KEY>
+   NEXT_PUBLIC_GROQ_MODEL=llama-3.3-70b-versatile
+   NEXT_PUBLIC_GITHUB_TOKEN=<GITHUB_TOKEN>
+   
   ```
 
 * Register new agents via the `/agents` REST endpoints.
