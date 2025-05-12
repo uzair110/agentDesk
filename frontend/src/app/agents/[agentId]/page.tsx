@@ -26,18 +26,9 @@ export default function AgentDetailPage() {
     githubSummarizer: {
       owner: "your-github-username",
       repo: "your-repo-name",
-      token: "ghp_yourPersonalAccessToken"
     },
-    websiteLoader: {
-      url: "https://example.com"
-    },
-    serpApi: {
-      apiKey: "your-serp-api-key"
-    },
-    calculator: {},
-    weatherApi: {
-      apiKey: "your-weather-api-key",
-      location: "London,UK"
+    slackNotifier: {
+      WEBHOOK_URL: "your-slack-webhook-url"
     }
   }
 
