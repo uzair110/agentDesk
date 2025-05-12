@@ -28,7 +28,7 @@ export const chatAgent: RequestHandler = async (req, res) => {
     data: {
       agentId: agent.id,
       role:    "user",
-      message: message,
+      message,
     },
   });
 
@@ -39,29 +39,25 @@ export const chatAgent: RequestHandler = async (req, res) => {
     })
     .join("\n") || "";
 
-    const systemPrompt = `
-    You are a versatile assistant.
-    Available tools:
-    ${toolInfo || "(none)"}
-    
-    If the user asks you to use a tool, reply with exactly one JSON object:
-    {"toolKey":"<toolKey>","toolArgs":{…}}
+  const systemPrompt = [`
+You are a versatile assistant.
+Available tools:
+${toolInfo || "(none)"}
 
-    If the user asks to summarize a pull request, you **must** respond with exactly one JSON object containing:
- - "toolKey": the tool name ("githubSummarizer")
- - "toolArgs": an object with exactly one field "prNumber"
+If the user asks you to use a tool, reply with exactly one JSON object:
+{"toolKey":"<toolKey>","toolArgs":{…}}
 
-If the user says "latest" or "most recent", set "prNumber" to the string "latest".
-If they specify a number, set it to that number.
+If the user asks to summarize a pull request, you **must** respond with exactly one JSON object containing:
+ - "toolKey": "githubSummarizer"
+ - "toolArgs": { "prNumber": <string or number> }
 
 Example:
   {"toolKey":"githubSummarizer","toolArgs":{"prNumber":"latest"}}
   {"toolKey":"githubSummarizer","toolArgs":{"prNumber":42}}
 
-    if you don't find a tool, reply in plain text that you don't have the tool.  
-    
-    If no tool is needed, reply in plain text without mentioning your name.
-    `.trim();
+If you don't have the tool configured, reply in plain text.
+If no tool is needed, reply in plain text only.
+`].join('');
 
   let raw: string;
   try {
@@ -84,52 +80,37 @@ Example:
   try {
     choice = JSON.parse(raw);
   } catch {
-    // finalReply already set to raw
+    // Not a tool call, raw is the chat reply
   }
 
   if (choice) {
-    const entry = (agent.config as { tools?: any[] }).tools!.find(t => t.key === choice!.toolKey)!;
+    const entry = (agent.config as { tools?: any[] }).tools!
+      .find(t => t.key === choice!.toolKey);
     if (!entry) {
       finalReply = `Sorry, I don't have the "${choice!.toolKey}" tool configured.`;
     } else {
+      let toolResult: string;
       try {
-        finalReply = await invokeTool(entry, choice!.toolArgs);
+        toolResult = await invokeTool(entry, choice!.toolArgs);
       } catch (err: any) {
         finalReply = `Error invoking tool "${entry.key}": ${err.message}`;
+        toolResult = finalReply;
       }
-      // wrap-up
+
       try {
         const wrap = await chatCompletion(
           GROQ_API_KEY,
           GROQ_MODEL,
           [
             { role: "system", content: "Please summarize the following result concisely:" },
-            { role: "user",   content: finalReply },
+            { role: "user",   content: toolResult }
           ]
         );
-        if (wrap.trim()) {
-          finalReply = wrap.trim();
-        }
+        finalReply = wrap.trim() || toolResult;
       } catch {
-        // ignore wrap errors
+        finalReply = toolResult;
       }
     }
-  }
-
-  try {
-    const wrap = await chatCompletion(
-      GROQ_API_KEY,
-      GROQ_MODEL,
-      [
-        { role: "system", content: "Please produce a concise summary of the following output:" },
-        { role: "user",   content: finalReply }
-      ]
-    );
-    if (wrap.trim()) {
-      finalReply = wrap.trim();
-    }
-  } catch {
-    /* ignore */
   }
 
   await db.chatLog.create({
