@@ -39,12 +39,15 @@ export const chatAgent: RequestHandler = async (req, res) => {
     })
     .join("\n") || "";
 
-  const systemPrompt = `
-You are a versatile assistant that can invoke external tools as needed.
-Available tools:
-${toolInfo}
+    const systemPrompt = `
+    You are a versatile assistant.
+    Available tools:
+    ${toolInfo || "(none)"}
+    
+    If the user asks you to use a tool, reply with exactly one JSON object:
+    {"toolKey":"<toolKey>","toolArgs":{…}}
 
-If the user asks to summarize a pull request, you **must** respond with exactly one JSON object containing:
+    If the user asks to summarize a pull request, you **must** respond with exactly one JSON object containing:
  - "toolKey": the tool name ("githubSummarizer")
  - "toolArgs": an object with exactly one field "prNumber"
 
@@ -55,12 +58,10 @@ Example:
   {"toolKey":"githubSummarizer","toolArgs":{"prNumber":"latest"}}
   {"toolKey":"githubSummarizer","toolArgs":{"prNumber":42}}
 
-To use a tool, respond with exactly one JSON object:
-{"toolKey":"<toolKey>","toolArgs":{…}}
-If you don't need a tool, reply with plain text only.
-Keep your response concise, to the point and in a conversational tone.
-When you respond, do not mention your own name; just answer the user.
-`.trim();
+    if you don't find a tool, reply in plain text that you don't have the tool.  
+    
+    If no tool is needed, reply in plain text without mentioning your name.
+    `.trim();
 
   let raw: string;
   try {
@@ -88,11 +89,30 @@ When you respond, do not mention your own name; just answer the user.
 
   if (choice) {
     const entry = (agent.config as { tools?: any[] }).tools!.find(t => t.key === choice!.toolKey)!;
-    try {
-      finalReply = await invokeTool(entry, choice.toolArgs);
-    } catch (err: any) {
-      res.status(500).json({ error: `${entry.key} failed: ${err.message}` });
-      return;
+    if (!entry) {
+      finalReply = `Sorry, I don't have the "${choice!.toolKey}" tool configured.`;
+    } else {
+      try {
+        finalReply = await invokeTool(entry, choice!.toolArgs);
+      } catch (err: any) {
+        finalReply = `Error invoking tool "${entry.key}": ${err.message}`;
+      }
+      // wrap-up
+      try {
+        const wrap = await chatCompletion(
+          GROQ_API_KEY,
+          GROQ_MODEL,
+          [
+            { role: "system", content: "Please summarize the following result concisely:" },
+            { role: "user",   content: finalReply },
+          ]
+        );
+        if (wrap.trim()) {
+          finalReply = wrap.trim();
+        }
+      } catch {
+        // ignore wrap errors
+      }
     }
   }
 
