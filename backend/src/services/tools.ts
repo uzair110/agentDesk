@@ -3,6 +3,7 @@ import axios, { Method } from "axios";
 import { summarizePr, SummarizerConfig } from "./githubSummarizer";
 import { postToSlack } from "./slackClient";  
 import { chatCompletion, ChatMessage } from "./groqClient";
+import db from "../services/db";
 
 export interface ToolEntry {
   key:     string;
@@ -12,16 +13,37 @@ export interface ToolEntry {
 
 export async function invokeTool(
   entry: ToolEntry,
-  args:  Record<string, any>
+  args:  Record<string, any>,
+  log: Record<string, any>,
 ): Promise<string> {
   switch (entry.handler) {
     case "githubSummarizer": {
       const cfg = entry.config as SummarizerConfig;
-      return summarizePr(cfg, args.prNumber);
+      log = await db.log.update({
+        where: { id: log.id },
+        data: {
+          metaData: {
+            ...(log.metaData ?? {}),
+            args,
+            cfg
+          },
+        },
+      });
+      return summarizePr(cfg, args.prNumber, log);
     }
     case "slackNotifier": {
       const { WEBHOOK_URL } = entry.config;
-      return postToSlack(WEBHOOK_URL, args.text);
+      log = await db.log.update({
+        where: { id: log.id },
+        data: {
+          metaData: {
+            ...(log.metaData ?? {}),
+            webhookUrl: WEBHOOK_URL,
+            args,
+          },
+        },
+      });
+      return postToSlack(WEBHOOK_URL, args.text, log);
     }
     case "groqChat": {
       const cfg = entry.config;
