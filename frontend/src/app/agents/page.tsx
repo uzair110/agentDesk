@@ -79,6 +79,9 @@ export default function AgentsPage() {
               <Link href="/agents" className="text-white font-medium">
                 Agents
               </Link>
+              <Link href="/logs" className="text-white font-medium">
+                Logs
+              </Link>
             </nav>
           </div>
         </div>

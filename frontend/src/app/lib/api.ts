@@ -103,3 +103,9 @@ export async function listAgentLogs(agentId: string): Promise<ChatLog[]> {
   if (!res.ok) throw new Error("Failed to fetch logs");
   return res.json();
 }
+
+export async function listAllLogs(): Promise<any[]> {
+  const res = await fetch(`${BASE}/metalogs/all`);
+  if (!res.ok) throw new Error("Failed to fetch logs");
+  return res.json();
+}
