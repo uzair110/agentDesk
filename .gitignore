@@ -68,7 +68,7 @@ yarn-error.log*
 # ====================
 # Prisma
 # ====================
-/backend/prisma/*
+/backend/prisma/dev.db
 
 # ====================
 # OS & Editor
