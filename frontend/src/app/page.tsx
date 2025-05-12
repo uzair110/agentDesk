@@ -19,8 +19,8 @@ export default function Home(): React.ReactElement {
               <Link href="/agents" className="text-gray-300 hover:text-white transition-colors">
                 Agents
               </Link>
-              <Link href="/chat" className="text-gray-300 hover:text-white transition-colors">
-                Chat
+              <Link href="/logs" className="text-gray-300 hover:text-white transition-colors">
+                Logs
               </Link>
             </nav>
           </div>
