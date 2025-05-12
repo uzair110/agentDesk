@@ -8,3 +8,10 @@ export const getLogs: RequestHandler = async (req, res) => {
   });
   res.json(logs);
 };
+
+export const getAllLogs: RequestHandler = async (req, res) => {
+    const logs = await db.log.findMany({
+        orderBy: { ts: "asc" },
+    });
+    res.json(logs);
+};
