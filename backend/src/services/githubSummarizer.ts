@@ -12,10 +12,31 @@ export interface SummarizerConfig {
   repo:  string;
 }
 
+const getLatestPrNumber = async (cfg: SummarizerConfig): Promise<number> => {
+  const prRes = await fetch(
+    `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/pulls`,
+    { headers: { Authorization: `Bearer ${GITHUB_TOKEN}` } }
+  );
+  const prs = await prRes.json() as { number: number }[];
+  if (prs.length === 0) {
+    return -1;
+  }
+  return prs[0].number;
+};
+
 export async function summarizePr(
   cfg: SummarizerConfig,
-  prNumber: number
+  prNumber: number | string
 ): Promise<string> {
+
+  if (prNumber === "latest") {
+    prNumber = await getLatestPrNumber(cfg);
+  }
+
+  if (prNumber === -1) {
+    return `No pull requests found in ${cfg.owner}/${cfg.repo}`;
+  }
+
   const prRes = await fetch(
     `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/pulls/${prNumber}`,
     {

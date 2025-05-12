@@ -1,16 +1,23 @@
 services:
   backend:
     build: ./backend
+    env_file:
+      - ./backend/.env  
     ports:
       - "4000:4000"
+    environment:
+      DATABASE_URL: "file:./backend/prisma/dev.db"
     volumes:
-      - ./backend/data:/app/data
+      - dev-db:/backend/prisma/dev.db
 
   frontend:
     build: ./frontend
+    env_file:
+      - ./frontend/.env.local   
     ports:
       - "3000:3000"
     depends_on:
       - backend
-    environment:
-      - NEXT_PUBLIC_API_URL=http://backend:4000
+
+volumes:
+  dev-db:

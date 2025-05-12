@@ -1,5 +1,28 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
+
+export type ToolMetadata = {
+  key: string;
+  name: string;
+  description: string;
+  configSchema: object;
+};
+
+export type ToolEntry = {
+  key: string;
+  handler: string;
+  config: Record<string, unknown>;
+};
+
+export type ChatLog = {
+  id: number;
+  agentId: string;
+  role: "user" | "agent";
+  message: string;
+  ts: string;
+};
+
+
 export async function getAgents() {
   const res = await fetch(`${BASE}/agents`);
   if (!res.ok) throw new Error("Failed to fetch agents");
@@ -42,19 +65,6 @@ export async function chatAgent(
   return res.json() as Promise<{ reply: string }>;
 }
 
-export type ToolMetadata = {
-  key: string;
-  name: string;
-  description: string;
-  configSchema: object;
-};
-
-export type ToolEntry = {
-  key: string;
-  handler: string;
-  config: Record<string, unknown>;
-};
-
 export async function listAvailableTools(): Promise<ToolMetadata[]> {
   const res = await fetch(`${BASE}/tools`);
   if (!res.ok) throw new Error("Failed to fetch tools");
@@ -86,4 +96,10 @@ export async function removeAgentTool(agentId: string, key: string) {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to remove tool");
+}
+
+export async function listAgentLogs(agentId: string): Promise<ChatLog[]> {
+  const res = await fetch(`${BASE}/agents/${agentId}/logs`);
+  if (!res.ok) throw new Error("Failed to fetch logs");
+  return res.json();
 }

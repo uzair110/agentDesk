@@ -24,10 +24,11 @@ export default function AgentsPage() {
   const [loading, setLoading] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<string | null>(null);
+  const [agentCount, setAgentCount] = useState(0);
 
   useEffect(() => {
     fetchAgents();
-  }, []);
+  }, [agentCount]);
 
   async function fetchAgents() {
     try {
@@ -52,6 +53,7 @@ export default function AgentsPage() {
       setName("");
       setDesc("");
       setConfig("{}");
+      setAgentCount(prev => prev + 1);
     } catch (err) {
       console.error(err);
     } finally {
@@ -64,6 +66,7 @@ export default function AgentsPage() {
     setAgents((prev) => prev.filter((a) => a.id !== id));
     setDeleteModalOpen(false);
     setAgentToDelete(null);
+    setAgentCount(prev => prev - 1);
   }
 
   return (
@@ -79,7 +82,6 @@ export default function AgentsPage() {
         </button>
       </div>
 
-      {/* Create Agent Form */}
       {showForm && (
         <form
           onSubmit={onSubmit}

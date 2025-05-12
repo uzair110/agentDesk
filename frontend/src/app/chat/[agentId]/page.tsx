@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
-import { chatAgent } from "../../lib/api";
+import { chatAgent, ChatLog, listAgentLogs } from "../../lib/api";
 
 export default function ChatPage() {
   const { agentId } = useParams() as { agentId?: string };
@@ -13,7 +13,20 @@ export default function ChatPage() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
-
+  
+  useEffect(() => {
+    if (!agentId) return;
+    listAgentLogs(agentId)
+      .then((logs: ChatLog[]) => {
+        const initial = logs.map((log) => ({
+          from: log.role as "user" | "agent",
+          text: log.message,
+        }));
+        setMsgs(initial);
+      })
+      .catch(console.error);
+  }, [agentId]);
+  
   // Auto-scroll on new messages
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
