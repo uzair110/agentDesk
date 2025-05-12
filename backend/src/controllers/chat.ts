@@ -55,6 +55,13 @@ Example:
   {"toolKey":"githubSummarizer","toolArgs":{"prNumber":"latest"}}
   {"toolKey":"githubSummarizer","toolArgs":{"prNumber":42}}
 
+If the user asks to send a message/notification or notify to Slack, you **must** respond with exactly one JSON object containing:
+ - "toolKey": "slackNotifier"
+ - "toolArgs": { "text": <string> }
+
+Example:
+  {"toolKey":"slackNotifier","toolArgs":{"text":"Hello, world!"}}
+
 If you don't have the tool configured, reply in plain text.
 If no tool is needed, reply in plain text only.
 `].join('');

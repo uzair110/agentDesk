@@ -20,8 +20,8 @@ export async function invokeTool(
       return summarizePr(cfg, args.prNumber);
     }
     case "slackNotifier": {
-      const { webhookUrl, channel } = entry.config;
-      return postToSlack(webhookUrl, channel, args.text);
+      const { WEBHOOK_URL } = entry.config;
+      return postToSlack(WEBHOOK_URL, args.text);
     }
     case "groqChat": {
       const cfg = entry.config;

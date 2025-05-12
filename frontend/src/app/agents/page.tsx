@@ -79,9 +79,6 @@ export default function AgentsPage() {
               <Link href="/agents" className="text-white font-medium">
                 Agents
               </Link>
-              <Link href="/chat" className="text-gray-300 hover:text-white transition-colors">
-                Chat
-              </Link>
             </nav>
           </div>
         </div>
